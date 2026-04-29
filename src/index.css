@@ -1,0 +1,260 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%
+  }
+
+  .dark {
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%
+  }
+}
+
+
+
+img {
+  object-position: top;
+}
+
+.fixed {
+  position: fixed;
+}
+
+/* Custom button styles for the app */
+.add-order-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #0071e3;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-order-btn:hover {
+  background: #005bb5;
+}
+
+.add-order-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.edit-btn,
+.delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-right: 4px;
+}
+
+.edit-btn {
+  background: #f5f5f7;
+  color: #0071e3;
+}
+
+.edit-btn:hover {
+  background: #0071e3;
+  color: white;
+}
+
+.delete-btn {
+  background: #f5f5f7;
+  color: #ff3b30;
+}
+
+.delete-btn:hover {
+  background: #ff3b30;
+  color: white;
+}
+
+.orders-table {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.orders-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.orders-table th,
+.orders-table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+}
+
+.orders-table th {
+  background: #f5f5f7;
+  font-weight: 600;
+  color: #6e6e73;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.orders-table tbody tr:hover {
+  background: #f9f9fb;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge.success {
+  background: #e8f5e9;
+  color: #34c759;
+}
+
+.status-badge.danger {
+  background: #ffebee;
+  color: #ff3b30;
+}
+
+.status-badge.primary {
+  background: #e3f2fd;
+  color: #0071e3;
+}
+
+.status-badge.secondary {
+  background: #f3e5f5;
+  color: #5856d6;
+}
+
+.custom-reason-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d2d2d7;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.custom-reason-input:focus {
+  outline: none;
+  border-color: #0071e3;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+}
+
+.reason-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.reason-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.reason-modal .reason-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.reason-modal .reason-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #f5f5f7;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reason-modal .reason-item:hover {
+  background: #e8e8ed;
+}
+
+.reason-modal .reason-item.selected {
+  background: #e3f2fd;
+  border: 1px solid #0071e3;
+}
+
+.reason-modal .reason-item input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #0071e3;
+}
+
+.order-edit-info p {
+  margin: 6px 0;
+  font-size: 14px;
+}
+
+.text-success {
+  color: #34c759;
+}
+
+.text-danger {
+  color: #ff3b30;
+}
+
+.text-warning {
+  color: #ff9500;
+}
+
+/* 同步动画 */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
