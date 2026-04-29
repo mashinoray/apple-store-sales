@@ -206,7 +206,7 @@ const getWeekNumber = (date: Date): number => {
 };
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [weeklyTrainings, setWeeklyTrainings] = useState<WeeklyTraining[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
