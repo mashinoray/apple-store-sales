@@ -2,46 +2,6 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { Employee, Order, DailyStats, EmployeeStats, ReasonStats, TradeInReason, TrainingTaskType, EmployeeTrainingTask, WeeklyTraining, WeeklyPlan, WeeklyPlanTarget, EmployeeWeeklyTarget } from '../types';
 import { supabase, Employee as DbEmployee, Order as DbOrder, WeeklyTraining as DbWeeklyTraining, WeeklyPlan as DbWeeklyPlan } from '../lib/supabase';
 
-// 初始化员工数据
-const INITIAL_EMPLOYEES: Employee[] = [
-  { id: '1', name: '张伟', employeeId: 'A001', position: '高级顾问', isActive: true },
-  { id: '2', name: '李娜', employeeId: 'A002', position: '销售顾问', isActive: true },
-  { id: '3', name: '王强', employeeId: 'A003', position: '销售顾问', isActive: true },
-  { id: '4', name: '刘芳', employeeId: 'A004', position: '技术支持', isActive: true },
-  { id: '5', name: '陈明', employeeId: 'A005', position: '销售顾问', isActive: true },
-];
-
-// 初始化一些示例订单数据
-const INITIAL_ORDERS: Order[] = [
-  {
-    id: '1',
-    employeeId: '1',
-    customerName: '张三',
-    customerType: 'new',
-    product: 'iPhone',
-    purchaseType: 'full',
-    hasTradeIn: true,
-    amount: 7999,
-    date: new Date().toISOString().split('T')[0],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    employeeId: '2',
-    customerName: '李四',
-    customerType: 'existing',
-    product: 'Mac',
-    purchaseType: 'installment',
-    installmentMonths: 24,
-    hasTradeIn: false,
-    tradeInReason: 'price_unsatisfied',
-    customReason: '',
-    amount: 9999,
-    date: new Date().toISOString().split('T')[0],
-    createdAt: new Date().toISOString(),
-  },
-];
-
 // 将数据库格式转换为应用格式
 const dbEmployeeToApp = (db: DbEmployee): Employee => ({
   id: db.id,
@@ -258,121 +218,99 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // 周度计划状态
   const [weeklyPlans, setWeeklyPlans] = useState<WeeklyPlan[]>([]);
 
-  // 初始化：从云端加载数据
+  // 初始化：从云端加载数据（不再使用localStorage）
   useEffect(() => {
     const initializeApp = async () => {
       setIsSyncing(true);
       setSyncError(null);
 
       try {
-        // 尝试从云端加载员工数据
+        // 从云端加载员工数据
         const { data: cloudEmployees, error: empError } = await supabase
           .from('employees')
           .select('*')
           .order('created_at', { ascending: true });
 
         if (empError) {
-          console.warn('云端加载员工失败，使用本地数据:', empError);
-          // 回退到本地localStorage
-          const savedEmployees = localStorage.getItem('apple-store-employees');
-          if (savedEmployees) {
-            setEmployees(JSON.parse(savedEmployees));
-          } else {
-            setEmployees(INITIAL_EMPLOYEES);
-          }
+          console.warn('云端加载员工失败:', empError);
+          setSyncError('加载员工数据失败');
+          setEmployees([]);  // 云端加载失败则设为空
         } else if (cloudEmployees && cloudEmployees.length > 0) {
           const appEmployees = cloudEmployees.map(dbEmployeeToApp);
           setEmployees(appEmployees);
           console.log('从云端加载了', appEmployees.length, '个员工');
         } else {
-          // 云端没有数据，初始化基础员工数据
-          console.log('云端暂无员工数据，开始初始化...');
-          for (const emp of INITIAL_EMPLOYEES) {
-            await supabase.from('employees').insert(appEmployeeToDb(emp));
-          }
-          setEmployees(INITIAL_EMPLOYEES);
+          // 云端没有数据，设为空
+          console.log('云端暂无员工数据');
+          setEmployees([]);
         }
 
-        // 尝试从云端加载订单数据
+        // 从云端加载订单数据
         const { data: cloudOrders, error: orderError } = await supabase
           .from('orders')
           .select('*')
           .order('created_at', { ascending: false });
 
         if (orderError) {
-          console.warn('云端加载订单失败，使用本地数据:', orderError);
-          const savedOrders = localStorage.getItem('apple-store-orders');
-          if (savedOrders) {
-            setOrders(JSON.parse(savedOrders));
-          }
+          console.warn('云端加载订单失败:', orderError);
+          setSyncError('加载订单数据失败');
+          setOrders([]);  // 云端加载失败则设为空
         } else if (cloudOrders && cloudOrders.length > 0) {
           const appOrders = cloudOrders.map(dbOrderToApp);
           setOrders(appOrders);
           console.log('从云端加载了', appOrders.length, '条订单');
         } else {
-          // 云端没有订单，使用初始示例订单
-          setOrders(INITIAL_ORDERS);
-          for (const order of INITIAL_ORDERS) {
-            await supabase.from('orders').insert(appOrderToDb(order));
-          }
+          // 云端没有订单，设为空
+          console.log('云端暂无订单数据');
+          setOrders([]);
         }
 
-        // 尝试从云端加载培训数据
+        // 从云端加载培训数据
         const { data: cloudTrainings, error: trainingError } = await supabase
           .from('weekly_training')
           .select('*')
           .order('week_start_date', { ascending: false });
 
         if (trainingError) {
-          console.warn('云端加载培训数据失败，使用本地数据:', trainingError);
-          const savedTrainings = localStorage.getItem('apple-store-trainings');
-          if (savedTrainings) {
-            setWeeklyTrainings(JSON.parse(savedTrainings));
-          }
+          console.warn('云端加载培训数据失败:', trainingError);
+          setWeeklyTrainings([]);  // 云端加载失败则设为空
         } else if (cloudTrainings && cloudTrainings.length > 0) {
           const appTrainings = cloudTrainings.map(dbWeeklyTrainingToApp);
           setWeeklyTrainings(appTrainings);
           console.log('从云端加载了', appTrainings.length, '条培训记录');
+        } else {
+          console.log('云端暂无培训数据');
+          setWeeklyTrainings([]);
         }
 
-        // 尝试从云端加载周度计划
+        // 从云端加载周度计划
         const { data: cloudPlans, error: plansError } = await supabase
           .from('weekly_plans')
           .select('*')
           .order('week_start_date', { ascending: false });
 
         if (plansError) {
-          console.warn('云端加载周度计划失败，使用本地数据:', plansError);
-          const savedPlans = localStorage.getItem('apple-store-weekly-plans');
-          if (savedPlans) {
-            setWeeklyPlans(JSON.parse(savedPlans));
-          }
+          console.warn('云端加载周度计划失败:', plansError);
+          setWeeklyPlans([]);  // 云端加载失败则设为空
         } else if (cloudPlans && cloudPlans.length > 0) {
           const appPlans = cloudPlans.map(dbWeeklyPlanToApp);
           setWeeklyPlans(appPlans);
           console.log('从云端加载了', appPlans.length, '条周度计划');
+        } else {
+          console.log('云端暂无周度计划');
+          setWeeklyPlans([]);
         }
 
         setLastSyncTime(new Date().toISOString());
         console.log('云端同步完成');
       } catch (error) {
         console.error('云端同步失败:', error);
-        setSyncError('云端同步失败，已切换到本地存储模式');
-
-        // 回退到本地数据
-        const savedEmployees = localStorage.getItem('apple-store-employees');
-        const savedOrders = localStorage.getItem('apple-store-orders');
-        const savedTrainings = localStorage.getItem('apple-store-trainings');
-        const savedPlans = localStorage.getItem('apple-store-weekly-plans');
-
-        if (savedEmployees) setEmployees(JSON.parse(savedEmployees));
-        else setEmployees(INITIAL_EMPLOYEES);
-
-        if (savedOrders) setOrders(JSON.parse(savedOrders));
-        else setOrders(INITIAL_ORDERS);
-
-        if (savedTrainings) setWeeklyTrainings(JSON.parse(savedTrainings));
-        if (savedPlans) setWeeklyPlans(JSON.parse(savedPlans));
+        setSyncError('云端同步失败');
+        // 发生错误时清空所有数据，不再使用本地缓存
+        setEmployees([]);
+        setOrders([]);
+        setWeeklyTrainings([]);
+        setWeeklyPlans([]);
       }
 
       setIsSyncing(false);
@@ -382,31 +320,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     initializeApp();
   }, []);
 
-  // 保存到localStorage（备份）
-  useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem('apple-store-employees', JSON.stringify(employees));
-    }
-  }, [employees, isInitialized]);
-
-  useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem('apple-store-orders', JSON.stringify(orders));
-    }
-  }, [orders, isInitialized]);
-
-  useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem('apple-store-trainings', JSON.stringify(weeklyTrainings));
-    }
-  }, [weeklyTrainings, isInitialized]);
-
-  // 周度计划本地存储（备份）
-  useEffect(() => {
-    if (isInitialized && weeklyPlans.length > 0) {
-      localStorage.setItem('apple-store-weekly-plans', JSON.stringify(weeklyPlans));
-    }
-  }, [weeklyPlans, isInitialized]);
+  // 不再使用localStorage备份 - 全部数据存储在云端
 
   // 同步培训记录到云端
   const syncTrainingToCloud = async (training: WeeklyTraining, action: 'insert' | 'update' | 'delete') => {
