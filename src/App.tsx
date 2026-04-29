@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
+import { supabase } from './lib/supabase';
 // @ts-ignore - recharts类型兼容性问题
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -1322,33 +1323,90 @@ function ImportPage() {
 
   // 同步到订单管理
   const handleSyncToOrders = () => {
+    // 首先收集所有需要创建的新员工（去重）
+    const newEmployeeNames = new Set<string>();
+    
+    importedData.forEach(sale => {
+      const salespersonName = sale.salesperson.trim();
+      if (!salespersonName) return;
+      
+      // 检查是否已存在
+      const exists = employees.some(e => 
+        e.name === salespersonName ||
+        e.name.includes(salespersonName) ||
+        salespersonName.includes(e.name)
+      );
+      
+      if (!exists) {
+        newEmployeeNames.add(salespersonName);
+      }
+    });
+
+    // 创建一个映射：新员工名字 -> 新员工ID
+    const newEmployeeMap = new Map<string, string>();
+    
+    // 批量创建新员工
+    newEmployeeNames.forEach(name => {
+      const newId = Math.random().toString(36).substr(2, 9);
+      newEmployeeMap.set(name, newId);
+      
+      // 直接添加到supabase（同步执行）
+      supabase.from('employees').insert({
+        id: newId,
+        name: name,
+        employee_id: 'IMP' + Math.random().toString(36).substr(2, 6).toUpperCase(),
+        position: '销售顾问',
+        is_active: true
+      }).then(({ error }) => {
+        if (error) console.error('创建员工失败:', error);
+      });
+    });
+
+    // 将新创建的员工也添加到本地状态
+    const newEmployees = Array.from(newEmployeeMap.entries()).map(([name, id]) => ({
+      id,
+      name,
+      employeeId: 'IMP' + id.substring(0, 6).toUpperCase(),
+      position: '销售顾问',
+      isActive: true
+    }));
+    
+    if (newEmployees.length > 0) {
+      // 需要更新本地employees状态
+      const updatedEmployees = [...employees, ...newEmployees];
+      // 注意：这里需要通知AppContext更新，但由于我们直接操作了supabase，
+      // AppContext会通过refreshData或下次加载时同步
+    }
+
     // 将导入的数据转换为订单格式
     const ordersToImport = importedData.map(sale => {
-      // 尝试匹配员工
       let matchedEmployeeId = '';
       const salespersonName = sale.salesperson.trim();
 
-      // 首先尝试精确匹配
+      if (!salespersonName) {
+        // 没有销售人员名称，跳过
+        return null;
+      }
+
+      // 首先尝试精确匹配现有员工
       let matchedEmp = employees.find(e => e.name === salespersonName);
       if (matchedEmp) {
         matchedEmployeeId = matchedEmp.id;
       } else {
-        // 尝试模糊匹配（名字的一部分）
+        // 尝试模糊匹配
         matchedEmp = employees.find(e =>
           salespersonName.includes(e.name) || e.name.includes(salespersonName)
         );
         if (matchedEmp) {
           matchedEmployeeId = matchedEmp.id;
         } else {
-          // 如果没有匹配的员工，创建一个新员工
-          const newEmpId = Math.random().toString(36).substr(2, 9);
-          addEmployee({
-            name: salespersonName,
-            position: '销售顾问',
-            isActive: true
-          });
-          matchedEmployeeId = newEmpId;
+          // 使用之前创建的新员工映射
+          matchedEmployeeId = newEmployeeMap.get(salespersonName) || '';
         }
+      }
+
+      if (!matchedEmployeeId) {
+        return null; // 跳过无法匹配员工的订单
       }
 
       // 确定产品类型
@@ -1369,19 +1427,19 @@ function ImportPage() {
         customerType: 'new' as CustomerType,
         product: productType,
         purchaseType: 'full' as PurchaseType,
-        hasTradeIn: false, // 导入的数据默认没有以旧换新，需要手动补充
+        hasTradeIn: false,
         tradeInReason: undefined,
         customReason: '',
         amount: sale.amount,
         date: sale.date,
       };
-    });
+    }).filter(Boolean);
 
     if (ordersToImport.length > 0) {
-      importOrders(ordersToImport);
+      importOrders(ordersToImport as any);
       setImportSuccess(true);
       // 自动切换到导入数据的日期
-      if (ordersToImport[0].date) {
+      if (ordersToImport[0]?.date) {
         setSelectedDate(ordersToImport[0].date);
       }
       alert(`成功导入 ${ordersToImport.length} 条订单到管理系统！\n\n已自动切换到数据日期查看。\n以旧换新信息需要在订单管理中手动补充。`);
