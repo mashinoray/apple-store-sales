@@ -1,0 +1,5 @@
+{
+  "buildCommand": "echo 'Using pre-built dist folder'",
+  "outputDirectory": "dist",
+  "installCommand": "echo 'Dependencies already installed'"
+}
