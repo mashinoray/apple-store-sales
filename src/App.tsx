@@ -1236,7 +1236,6 @@ function ImportPage() {
           }
 
           // 判断主机类型，并识别ACS/套包/睿意保
-          let hostType: 'iPhone' | '其他主机' | '非主机' = '非主机';
           const catStr = String(category || '').toUpperCase();
           const nameStr = String(productName || '');
 
