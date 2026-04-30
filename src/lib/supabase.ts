@@ -31,6 +31,10 @@ export interface Order {
   amount?: number;
   date: string;
   created_at?: string;
+  // 销售项目新增字段
+  bundle_type?: string;
+  has_acs?: boolean;
+  has_ruiyi?: boolean;
 }
 
 // 培训任务类型
@@ -121,8 +125,17 @@ CREATE TABLE IF NOT EXISTS public.orders (
   custom_reason TEXT,
   amount REAL,
   date TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  -- 销售项目新增字段
+  bundle_type TEXT,
+  has_acs BOOLEAN DEFAULT false,
+  has_ruiyi BOOLEAN DEFAULT false
 );
+
+-- 为已有订单表添加销售项目字段（如表已存在则执行以下ALTER语句）
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS bundle_type TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS has_acs BOOLEAN DEFAULT false;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS has_ruiyi BOOLEAN DEFAULT false;
 
 -- 周培训记录表
 CREATE TABLE IF NOT EXISTS public.weekly_training (

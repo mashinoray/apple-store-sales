@@ -49,6 +49,10 @@ export interface Order {
   amount?: number;
   date: string;
   createdAt: string;
+  // 销售项目新增字段
+  bundleType?: string;    // 套包类型（如 "iPhone17 399 睿选包"）
+  hasACS?: boolean;       // 是否购买了 AppleCare Services
+  hasRuiYi?: boolean;    // 是否购买了睿意保
 }
 
 // 每日统计类型

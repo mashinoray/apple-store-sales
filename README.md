@@ -38,7 +38,8 @@
 | 📤 导入数据 | 上传零售系统导出的 Excel，自动解析并导入订单 |
 | 👥 员工管理 | 添加/编辑/删除员工，设置职位和在职状态 |
 | 🎓 培训跟进 | 按周查看员工培训任务完成情况，点击勾选标记 |
-| 📅 周度看板 | 对比本周与上周数据，查看环比变化 |
+| 📅 周度 Apple 项目看板 | 对比本周与上周 iPhone 换新率、主机销量等数据 |
+| 📊 周度销售项目看板 | 查看套包数量、ACS 连带率、睿意保数量等销售项目指标 |
 | 🎯 周度计划 | 设置每周销售目标（iPhone 销量、换新率、分期率等） |
 
 ---
@@ -152,8 +153,17 @@ CREATE TABLE IF NOT EXISTS public.orders (
   custom_reason TEXT,
   amount REAL,
   date TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  -- 销售项目字段（套包/ACS/睿意保）
+  bundle_type TEXT,
+  has_acs BOOLEAN DEFAULT false,
+  has_ruiyi BOOLEAN DEFAULT false
 );
+
+-- 为已有订单表添加销售项目字段（如表已存在则执行以下ALTER语句）
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS bundle_type TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS has_acs BOOLEAN DEFAULT false;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS has_ruiyi BOOLEAN DEFAULT false;
 
 -- 周培训记录表
 CREATE TABLE IF NOT EXISTS public.weekly_training (

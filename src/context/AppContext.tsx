@@ -27,6 +27,10 @@ const dbOrderToApp = (db: DbOrder): Order => ({
   amount: db.amount,
   date: db.date,
   createdAt: db.created_at,
+  // 销售项目字段
+  bundleType: db.bundle_type,
+  hasACS: db.has_acs,
+  hasRuiYi: db.has_ruiyi,
 });
 
 // 将应用格式转换为数据库格式
@@ -54,6 +58,10 @@ const appOrderToDb = (app: Order): Partial<DbOrder> => ({
   amount: app.amount || null,
   date: app.date,
   created_at: app.createdAt,
+  // 销售项目字段
+  bundle_type: app.bundleType || null,
+  has_acs: app.hasACS || false,
+  has_ruiyi: app.hasRuiYi || false,
 });
 
 interface AppContextType {

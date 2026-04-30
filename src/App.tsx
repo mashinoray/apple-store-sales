@@ -31,7 +31,7 @@ const COLORS = {
 const CHART_COLORS = ['#0071e3', '#34c759', '#ff9500', '#ff3b30', '#86868b', '#5856d6', '#af52de', '#ff2d55'];
 
 // 页面类型
-type PageType = 'dashboard' | 'orders' | 'employees' | 'import' | 'training' | 'weekly_data' | 'weekly_plan';
+type PageType = 'dashboard' | 'orders' | 'employees' | 'import' | 'training' | 'weekly_data' | 'weekly_sales' | 'weekly_plan';
 
 // 解析Excel文件后的销售记录类型
 interface ImportedSale {
@@ -44,6 +44,10 @@ interface ImportedSale {
   quantity: number;
   amount: number;
   hostType: 'iPhone' | '其他主机' | '非主机';
+  // 销售项目新增字段
+  bundleType?: string;   // 套包类型
+  hasACS?: boolean;     // 是否为 AppleCare Services
+  hasRuiYi?: boolean;  // 是否为睿意保
 }
 
 // 员工主机销量统计
@@ -395,7 +399,14 @@ function Navbar({ currentPage, setCurrentPage }: { currentPage: PageType; setCur
           onClick={() => setCurrentPage('weekly_data')}
         >
           <CalendarDays size={18} />
-          <span>周度看板</span>
+          <span>周度 Apple 项目看板</span>
+        </button>
+        <button
+          className={`nav-btn ${currentPage === 'weekly_sales' ? 'active' : ''}`}
+          onClick={() => setCurrentPage('weekly_sales')}
+        >
+          <TrendingUp size={18} />
+          <span>周度销售项目看板</span>
         </button>
         <button
           className={`nav-btn ${currentPage === 'weekly_plan' ? 'active' : ''}`}
@@ -1224,7 +1235,25 @@ function ImportPage() {
             }
           }
 
-          if (hostType !== '非主机') {
+          // 判断主机类型，并识别ACS/套包/睿意保
+          let hostType: 'iPhone' | '其他主机' | '非主机' = '非主机';
+          const catStr = String(category || '').toUpperCase();
+          const nameStr = String(productName || '');
+
+          if (catStr.includes('IPHONE')) {
+            hostType = 'iPhone';
+          } else if (catStr.includes('IPAD') || catStr.includes('MAC') || catStr.includes('WATCH')) {
+            hostType = '其他主机';
+          }
+
+          // 识别 ACS（AppleCare Services）
+          const isACS = catStr.includes('APPL CARE') || catStr.includes('APPLECARE');
+          // 识别睿意保
+          const isRuiYi = nameStr.includes('睿意保');
+          // 识别套包
+          const isBundle = String(category || '') === '套包';
+
+          if (hostType !== '非主机' || isACS || isRuiYi || isBundle) {
             // 格式化日期
             let formattedDate = '';
             if (date) {
@@ -1254,21 +1283,29 @@ function ImportPage() {
               quantity: Number(quantity),
               amount: Number(amount),
               hostType,
+              hasACS: isACS,
+              hasRuiYi: isRuiYi,
+              bundleType: isBundle ? nameStr : undefined,
             });
           }
         }
 
-        // 按销售人员汇总
-        const salesMap = new Map<string, { iphone: number; other: number; total: number }>();
+        // 按销售人员汇总（主机销量 + 销售项目）
+        const salesMap = new Map<string, { iphone: number; other: number; total: number; acs: number; bundle: number; ruiyi: number }>();
 
         sales.forEach(sale => {
-          const existing = salesMap.get(sale.salesperson) || { iphone: 0, other: 0, total: 0 };
+          const existing = salesMap.get(sale.salesperson) || { iphone: 0, other: 0, total: 0, acs: 0, bundle: 0, ruiyi: 0 };
           if (sale.hostType === 'iPhone') {
             existing.iphone += sale.quantity;
           } else if (sale.hostType === '其他主机') {
             existing.other += sale.quantity;
           }
-          existing.total += sale.quantity;
+          if (sale.hostType !== '非主机') {
+            existing.total += sale.quantity;
+          }
+          if (sale.hasACS) existing.acs += sale.quantity;
+          if (sale.bundleType) existing.bundle += sale.quantity;
+          if (sale.hasRuiYi) existing.ruiyi += sale.quantity;
           salesMap.set(sale.salesperson, existing);
         });
 
@@ -1410,7 +1447,7 @@ function ImportPage() {
         return null; // 跳过无法匹配员工的订单
       }
 
-      // 确定产品类型
+      // 确定产品类型（ACS/套包/睿意保标记为Other）
       let productType: ProductType = 'iPhone';
       if (sale.hostType === 'iPhone') {
         productType = 'iPhone';
@@ -1420,6 +1457,8 @@ function ImportPage() {
         productType = 'Mac';
       } else if (sale.category.toUpperCase().includes('WATCH')) {
         productType = 'Apple Watch';
+      } else if (sale.hasACS || sale.hasRuiYi || sale.bundleType) {
+        productType = 'Other';
       }
 
       return {
@@ -1433,6 +1472,10 @@ function ImportPage() {
         customReason: '',
         amount: sale.amount,
         date: sale.date,
+        // 销售项目字段
+        bundleType: sale.bundleType,
+        hasACS: sale.hasACS,
+        hasRuiYi: sale.hasRuiYi,
       };
     }).filter(Boolean);
 
@@ -1888,8 +1931,8 @@ function TrainingPage() {
   );
 }
 
-// 周度数据看板页面
-function WeeklyDataPage() {
+// 周度 Apple 项目看板页面
+function WeeklyApplePage() {
   const { employees, orders } = useApp();
 
   // 获取本周日作为默认选中周开始（周日开始，周六结束）
@@ -2024,7 +2067,7 @@ function WeeklyDataPage() {
   return (
     <div className="weekly-data-page">
       <div className="page-header">
-        <h2>周度数据看板</h2>
+        <h2>周度 Apple 项目看板</h2>
         <div className="header-actions">
           <div className="date-picker">
             <Calendar size={18} />
@@ -2196,6 +2239,292 @@ function WeeklyDataPage() {
           <li>全品类换新率 = 全品类换新数 / 主机总销量（含iPhone、iPad、Mac、Apple Watch）</li>
           <li>环比变化 = 本周数据 - 上周数据，▲表示上升（绿色），▼表示下降（红色），-表示持平</li>
           <li>换新率颜色：绿色≥35%，橙色25-35%，红色&lt;25%</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+// 周度销售项目看板页面
+function WeeklySalesPage() {
+  const { employees, orders } = useApp();
+
+  // 获取本周日作为默认选中周开始（周日开始，周六结束）
+  const getSunday = (date: Date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day;
+    d.setDate(diff);
+    return d.toISOString().split('T')[0];
+  };
+
+  const [selectedWeekStart, setSelectedWeekStart] = useState(getSunday(new Date()));
+
+  // 周选择器
+  const weekOptions = Array.from({ length: 12 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - i * 7);
+    const sunday = getSunday(date);
+    const saturday = new Date(sunday);
+    saturday.setDate(saturday.getDate() + 6);
+    return {
+      value: sunday,
+      label: `${sunday} ~ ${saturday.toISOString().split('T')[0]}`,
+    };
+  });
+
+  // 获取指定日期区间的订单
+  const getOrdersInRange = (startDate: string, endDate: string) => {
+    return orders.filter(order => order.date >= startDate && order.date <= endDate);
+  };
+
+  // 计算员工某周销售项目数据
+  const getEmployeeSalesStats = (employeeId: string, weekStart: string) => {
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    const weekEndStr = weekEnd.toISOString().split('T')[0];
+    const weekOrders = getOrdersInRange(weekStart, weekEndStr).filter(o => o.employeeId === employeeId);
+
+    const iphoneCount = weekOrders.filter(o => o.product === 'iPhone').length;
+    const hostTotal = weekOrders.filter(o => ['iPhone', 'iPad', 'Mac', 'Apple Watch'].includes(o.product)).length;
+    const acsCount = weekOrders.filter(o => o.hasACS).length;
+    const ruiYiCount = weekOrders.filter(o => o.hasRuiYi).length;
+    const bundleCount = weekOrders.filter(o => o.bundleType).length;
+
+    return {
+      iphoneCount,
+      hostTotal,
+      acsCount,
+      ruiYiCount,
+      bundleCount,
+      acsRate: iphoneCount > 0 ? (acsCount / iphoneCount) * 100 : 0,
+      bundleRate: hostTotal > 0 ? (bundleCount / hostTotal) * 100 : 0,
+    };
+  };
+
+  // 计算本周总计
+  const weekEnd = new Date(selectedWeekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const weekEndStr = weekEnd.toISOString().split('T')[0];
+  const currentWeekOrders = getOrdersInRange(selectedWeekStart, weekEndStr);
+
+  const totalCurrent = {
+    acsCount: currentWeekOrders.filter(o => o.hasACS).length,
+    ruiYiCount: currentWeekOrders.filter(o => o.hasRuiYi).length,
+    bundleCount: currentWeekOrders.filter(o => o.bundleType).length,
+    iphoneCount: currentWeekOrders.filter(o => o.product === 'iPhone').length,
+    hostTotal: currentWeekOrders.filter(o => ['iPhone', 'iPad', 'Mac', 'Apple Watch'].includes(o.product)).length,
+  };
+  totalCurrent.acsRate = totalCurrent.iphoneCount > 0 ? (totalCurrent.acsCount / totalCurrent.iphoneCount) * 100 : 0;
+  totalCurrent.bundleRate = totalCurrent.hostTotal > 0 ? (totalCurrent.bundleCount / totalCurrent.hostTotal) * 100 : 0;
+
+  // 上周总计
+  const lastWeekStart = new Date(selectedWeekStart);
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+  const lastWeekStartStr = lastWeekStart.toISOString().split('T')[0];
+  const lastWeekEnd = new Date(lastWeekStartStr);
+  lastWeekEnd.setDate(lastWeekEnd.getDate() + 6);
+  const lastWeekEndStr = lastWeekEnd.toISOString().split('T')[0];
+  const lastWeekOrders = getOrdersInRange(lastWeekStartStr, lastWeekEndStr);
+
+  const totalLast = {
+    acsCount: lastWeekOrders.filter(o => o.hasACS).length,
+    ruiYiCount: lastWeekOrders.filter(o => o.hasRuiYi).length,
+    bundleCount: lastWeekOrders.filter(o => o.bundleType).length,
+    iphoneCount: lastWeekOrders.filter(o => o.product === 'iPhone').length,
+    hostTotal: lastWeekOrders.filter(o => ['iPhone', 'iPad', 'Mac', 'Apple Watch'].includes(o.product)).length,
+  };
+  totalLast.acsRate = totalLast.iphoneCount > 0 ? (totalLast.acsCount / totalLast.iphoneCount) * 100 : 0;
+  totalLast.bundleRate = totalLast.hostTotal > 0 ? (totalLast.bundleCount / totalLast.hostTotal) * 100 : 0;
+
+  // 环比变化
+  const acsRateChange = totalCurrent.acsRate - totalLast.acsRate;
+  const bundleRateChange = totalCurrent.bundleRate - totalLast.bundleRate;
+
+  const formatChange = (change: number) => {
+    if (change > 0) return `+${change.toFixed(2)}%`;
+    if (change < 0) return `${change.toFixed(2)}%`;
+    return '0.00%';
+  };
+
+  const getChangeColor = (change: number) => {
+    if (change > 0) return '#34c759';
+    if (change < 0) return '#ff3b30';
+    return '#86868b';
+  };
+
+  // 员工明细
+  const activeEmployees = employees.filter(e => e.isActive);
+  const employeeStats = activeEmployees.map(emp => {
+    const current = getEmployeeSalesStats(emp.id, selectedWeekStart);
+    const last = getEmployeeSalesStats(emp.id, lastWeekStartStr);
+    return {
+      employeeId: emp.id,
+      employeeName: emp.name,
+      current,
+      last,
+      acsRateChange: current.acsRate - last.acsRate,
+      bundleRateChange: current.bundleRate - last.bundleRate,
+    };
+  }).sort((a, b) => b.current.acsCount + b.current.bundleCount - (a.current.acsCount + a.current.bundleCount));
+
+  return (
+    <div className="weekly-sales-page">
+      <div className="page-header">
+        <h2>周度销售项目看板</h2>
+        <div className="header-actions">
+          <div className="date-picker">
+            <Calendar size={18} />
+            <select
+              value={selectedWeekStart}
+              onChange={(e) => setSelectedWeekStart(e.target.value)}
+              style={{ padding: '8px', borderRadius: '8px', border: '1px solid #d2d2d7', fontSize: '14px' }}
+            >
+              {weekOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* 本周总体概览 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginTop: '20px' }}>
+        {/* 套包 */}
+        <div className="stat-card" style={{ borderLeft: '4px solid #5856d6', padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+            <span style={{ fontSize: '36px', fontWeight: 'bold', color: '#5856d6' }}>{totalCurrent.bundleCount}</span>
+            <span style={{ fontSize: '13px', color: getChangeColor(totalCurrent.bundleCount - totalLast.bundleCount), fontWeight: '600' }}>
+              {totalCurrent.bundleCount - totalLast.bundleCount > 0 ? '+' : ''}{totalCurrent.bundleCount - totalLast.bundleCount}
+            </span>
+          </div>
+          <div style={{ color: '#6e6e73', marginTop: '8px', fontSize: '14px', fontWeight: '500' }}>套包数量</div>
+        </div>
+
+        {/* 套包连带率 */}
+        <div className="stat-card" style={{ borderLeft: '4px solid #af52de', padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <span style={{ fontSize: '36px', fontWeight: 'bold', color: '#af52de' }}>{totalCurrent.bundleRate.toFixed(2)}%</span>
+            <span style={{ fontSize: '13px', color: getChangeColor(bundleRateChange), fontWeight: '600' }}>
+              {formatChange(bundleRateChange)}
+            </span>
+          </div>
+          <div style={{ color: '#6e6e73', marginTop: '8px', fontSize: '14px', fontWeight: '500' }}>套包连带率</div>
+        </div>
+
+        {/* ACS */}
+        <div className="stat-card" style={{ borderLeft: '4px solid #0071e3', padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+            <span style={{ fontSize: '36px', fontWeight: 'bold', color: '#0071e3' }}>{totalCurrent.acsCount}</span>
+            <span style={{ fontSize: '13px', color: getChangeColor(totalCurrent.acsCount - totalLast.acsCount), fontWeight: '600' }}>
+              {totalCurrent.acsCount - totalLast.acsCount > 0 ? '+' : ''}{totalCurrent.acsCount - totalLast.acsCount}
+            </span>
+          </div>
+          <div style={{ color: '#6e6e73', marginTop: '8px', fontSize: '14px', fontWeight: '500' }}>ACS 数量</div>
+        </div>
+
+        {/* ACS 连带率 */}
+        <div className="stat-card" style={{ borderLeft: '4px solid #30d158', padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <span style={{ fontSize: '36px', fontWeight: 'bold', color: '#30d158' }}>{totalCurrent.acsRate.toFixed(2)}%</span>
+            <span style={{ fontSize: '13px', color: getChangeColor(acsRateChange), fontWeight: '600' }}>
+              {formatChange(acsRateChange)}
+            </span>
+          </div>
+          <div style={{ color: '#6e6e73', marginTop: '8px', fontSize: '14px', fontWeight: '500' }}>ACS 连带率</div>
+        </div>
+
+        {/* 睿意保 */}
+        <div className="stat-card" style={{ borderLeft: '4px solid #ff9500', padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+            <span style={{ fontSize: '36px', fontWeight: 'bold', color: '#ff9500' }}>{totalCurrent.ruiYiCount}</span>
+            <span style={{ fontSize: '13px', color: getChangeColor(totalCurrent.ruiYiCount - totalLast.ruiYiCount), fontWeight: '600' }}>
+              {totalCurrent.ruiYiCount - totalLast.ruiYiCount > 0 ? '+' : ''}{totalCurrent.ruiYiCount - totalLast.ruiYiCount}
+            </span>
+          </div>
+          <div style={{ color: '#6e6e73', marginTop: '8px', fontSize: '14px', fontWeight: '500' }}>睿意保数量</div>
+        </div>
+
+        {/* iPhone 销量（参考） */}
+        <div className="stat-card" style={{ borderLeft: '4px solid #86868b', padding: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+            <span style={{ fontSize: '36px', fontWeight: 'bold', color: '#86868b' }}>{totalCurrent.iphoneCount}</span>
+            <span style={{ fontSize: '13px', color: getChangeColor(totalCurrent.iphoneCount - totalLast.iphoneCount), fontWeight: '600' }}>
+              {totalCurrent.iphoneCount - totalLast.iphoneCount > 0 ? '+' : ''}{totalCurrent.iphoneCount - totalLast.iphoneCount}
+            </span>
+          </div>
+          <div style={{ color: '#6e6e73', marginTop: '8px', fontSize: '14px', fontWeight: '500' }}>iPhone 销量（参考）</div>
+        </div>
+      </div>
+
+      {/* 员工明细表 */}
+      <div style={{ marginTop: '24px', backgroundColor: '#fff', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+        <h3 style={{ marginBottom: '16px' }}>员工销售项目明细</h3>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e5e5ea' }}>
+                <th style={{ padding: '12px 8px', textAlign: 'left', color: '#6e6e73' }}>员工</th>
+                <th style={{ padding: '12px 8px', textAlign: 'center', color: '#6e6e73' }}>套包数</th>
+                <th style={{ padding: '12px 8px', textAlign: 'center', color: '#6e6e73' }}>套包率</th>
+                <th style={{ padding: '12px 8px', textAlign: 'center', color: '#6e6e73' }}>ACS数</th>
+                <th style={{ padding: '12px 8px', textAlign: 'center', color: '#6e6e73' }}>ACS率</th>
+                <th style={{ padding: '12px 8px', textAlign: 'center', color: '#6e6e73' }}>睿意保</th>
+                <th style={{ padding: '12px 8px', textAlign: 'center', color: '#6e6e73' }}>iPhone</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activeEmployees.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: '#6e6e73' }}>
+                    暂无员工数据
+                  </td>
+                </tr>
+              ) : employeeStats.map(stat => (
+                <tr key={stat.employeeId} style={{ borderBottom: '1px solid #e5e5ea' }}>
+                  <td style={{ padding: '12px 8px', fontWeight: '600' }}>{stat.employeeName}</td>
+                  <td style={{ padding: '12px 8px', textAlign: 'center', color: '#5856d6', fontWeight: 'bold' }}>{stat.current.bundleCount}</td>
+                  <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                    <span style={{ color: '#af52de', fontWeight: 'bold' }}>{stat.current.bundleRate.toFixed(2)}%</span>
+                    <span style={{ fontSize: '12px', color: getChangeColor(stat.bundleRateChange), marginLeft: '4px' }}>
+                      ({stat.bundleRateChange > 0 ? '+' : ''}{stat.bundleRateChange.toFixed(2)}%)
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px 8px', textAlign: 'center', color: '#0071e3', fontWeight: 'bold' }}>{stat.current.acsCount}</td>
+                  <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                    <span style={{ color: '#30d158', fontWeight: 'bold' }}>{stat.current.acsRate.toFixed(2)}%</span>
+                    <span style={{ fontSize: '12px', color: getChangeColor(stat.acsRateChange), marginLeft: '4px' }}>
+                      ({stat.acsRateChange > 0 ? '+' : ''}{stat.acsRateChange.toFixed(2)}%)
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px 8px', textAlign: 'center', color: '#ff9500', fontWeight: 'bold' }}>{stat.current.ruiYiCount}</td>
+                  <td style={{ padding: '12px 8px', textAlign: 'center', color: '#86868b' }}>{stat.current.iphoneCount}</td>
+                </tr>
+              ))}
+              {/* 合计行 */}
+              <tr style={{ borderTop: '2px solid #d2d2d7', fontWeight: 'bold', backgroundColor: '#f5f5f7' }}>
+                <td style={{ padding: '12px 8px' }}>合计</td>
+                <td style={{ padding: '12px 8px', textAlign: 'center', color: '#5856d6' }}>{totalCurrent.bundleCount}</td>
+                <td style={{ padding: '12px 8px', textAlign: 'center', color: '#af52de' }}>{totalCurrent.bundleRate.toFixed(2)}%</td>
+                <td style={{ padding: '12px 8px', textAlign: 'center', color: '#0071e3' }}>{totalCurrent.acsCount}</td>
+                <td style={{ padding: '12px 8px', textAlign: 'center', color: '#30d158' }}>{totalCurrent.acsRate.toFixed(2)}%</td>
+                <td style={{ padding: '12px 8px', textAlign: 'center', color: '#ff9500' }}>{totalCurrent.ruiYiCount}</td>
+                <td style={{ padding: '12px 8px', textAlign: 'center', color: '#86868b' }}>{totalCurrent.iphoneCount}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 说明 */}
+      <div style={{ marginTop: '20px', padding: '16px', backgroundColor: '#f5f5f7', borderRadius: '8px', color: '#6e6e73', fontSize: '13px' }}>
+        <p><strong>说明：</strong></p>
+        <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+          <li>套包连带率 = 套包数量 / 主机总销量</li>
+          <li>ACS 连带率 = ACS 数量 / iPhone 销量</li>
+          <li>ACS（AppleCare Services）仅限 iPhone 延保服务</li>
+          <li>睿意保为 AirPods / Watch / iPad 等产品的延保服务</li>
+          <li>环比变化 = 本周 - 上周，绿色表示上升，红色表示下降</li>
         </ul>
       </div>
     </div>
@@ -3098,7 +3427,8 @@ function AppContent() {
         {currentPage === 'import' && <ImportPage />}
         {currentPage === 'employees' && <EmployeesPage />}
         {currentPage === 'training' && <TrainingPage />}
-        {currentPage === 'weekly_data' && <WeeklyDataPage />}
+        {currentPage === 'weekly_data' && <WeeklyApplePage />}
+        {currentPage === 'weekly_sales' && <WeeklySalesPage />}
         {currentPage === 'weekly_plan' && <WeeklyPlanPage />}
       </main>
       <footer className="footer">
