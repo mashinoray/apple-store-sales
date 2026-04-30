@@ -851,9 +851,13 @@ function OrdersPage() {
   const [editHasTradeIn, setEditHasTradeIn] = useState(false);
   const [editIsInstallment, setEditIsInstallment] = useState(false);
 
+  // 四大主机产品列表
+  const HOST_PRODUCTS = ['iPhone', 'iPad', 'Mac', 'Apple Watch'];
+  
   const filteredOrders = orders
     .filter(order => order.date === selectedDate)
     .filter(order => !filterEmployee || order.employeeId === filterEmployee)
+    .filter(order => HOST_PRODUCTS.includes(order.product)) // 只显示四大主机订单
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   // 打开编辑弹窗
