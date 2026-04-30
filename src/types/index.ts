@@ -95,7 +95,7 @@ export const TRADE_IN_REASON_LABELS: Record<TradeInReason, string> = {
   model_too_old: '顾客旧机型太旧不愿意换新',
   no_willingness: '顾客无换新意愿',
   given_to_family: '旧机已给家人使用',
-  gap_7: '（空选项）',
+  gap_7: '留做当备用机',
   cannot_trade_in: '旧机无法换新',
   process_complex: '流程太复杂',
   considering: '顾客考虑中',
