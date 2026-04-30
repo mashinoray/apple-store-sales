@@ -553,13 +553,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const getReasonStats = (date?: string): ReasonStats[] => {
     const dateOrders = getOrdersByDate(date).filter(order => !order.hasTradeIn);
     const reasonCounts: Record<TradeInReason, number> = {
-      no_need: 0,
-      damaged: 0,
-      price_unsatisfied: 0,
+      backup_keep: 0,
+      gift: 0,
+      price_compare_lost: 0,
+      model_too_old: 0,
+      no_willingness: 0,
+      given_to_family: 0,
+      gap_7: 0,
+      cannot_trade_in: 0,
       process_complex: 0,
       considering: 0,
-      other_quote: 0,
-      time_pressure: 0,
       other: 0,
     };
 

@@ -22,13 +22,16 @@ export type InstallmentMonths = 12 | 24 | 36;
 
 // 以旧换新未成交原因
 export type TradeInReason =
-  | 'no_need'
-  | 'damaged'
-  | 'price_unsatisfied'
+  | 'backup_keep'
+  | 'gift'
+  | 'price_compare_lost'
+  | 'model_too_old'
+  | 'no_willingness'
+  | 'given_to_family'
+  | 'gap_7'
+  | 'cannot_trade_in'
   | 'process_complex'
   | 'considering'
-  | 'other_quote'
-  | 'time_pressure'
   | 'other';
 
 // 订单类型定义
@@ -86,13 +89,16 @@ export interface ReasonStats {
 
 // 预设原因映射（中文）
 export const TRADE_IN_REASON_LABELS: Record<TradeInReason, string> = {
-  no_need: '客户表示不需要（旧机还能用）',
-  damaged: '旧机损坏严重（不值钱）',
-  price_unsatisfied: '补贴金额不满意',
+  backup_keep: '顾客需要备用（旧机留用）',
+  gift: '顾客买机器送人',
+  price_compare_lost: '顾客比价丢失',
+  model_too_old: '顾客旧机型太旧不愿意换新',
+  no_willingness: '顾客无换新意愿',
+  given_to_family: '旧机已给家人使用',
+  gap_7: '（空选项）',
+  cannot_trade_in: '旧机无法换新',
   process_complex: '流程太复杂',
-  considering: '客户考虑中',
-  other_quote: '已有其他渠道报价',
-  time_pressure: '客户赶时间',
+  considering: '顾客考虑中',
   other: '其他原因',
 };
 
