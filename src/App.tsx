@@ -3284,6 +3284,7 @@ function EmployeesPage() {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [formData, setFormData] = useState({
     name: '',
+    employeeId: '',
     position: '销售顾问',
   });
 
@@ -3296,7 +3297,7 @@ function EmployeesPage() {
       addEmployee({ ...formData, isActive: true });
     }
 
-    setFormData({ name: '', position: '销售顾问' });
+    setFormData({ name: '', employeeId: '', position: '销售顾问' });
     setEditingEmployee(null);
     setIsModalOpen(false);
   };
@@ -3305,6 +3306,7 @@ function EmployeesPage() {
     setEditingEmployee(emp);
     setFormData({
       name: emp.name,
+      employeeId: emp.employeeId,
       position: emp.position,
     });
     setIsModalOpen(true);
@@ -3326,7 +3328,7 @@ function EmployeesPage() {
         <h2>员工管理</h2>
         <button className="add-order-btn" onClick={() => {
           setEditingEmployee(null);
-          setFormData({ name: '', position: '销售顾问' });
+          setFormData({ name: '', employeeId: '', position: '销售顾问' });
           setIsModalOpen(true);
         }}>
           <Plus size={18} />
@@ -3390,6 +3392,16 @@ function EmployeesPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
                   placeholder="请输入员工姓名"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>工号 <span className="required">*</span></label>
+                <input
+                  type="text"
+                  value={formData.employeeId}
+                  onChange={(e) => setFormData({...formData, employeeId: e.target.value})}
+                  placeholder="请输入员工工号"
                   required
                 />
               </div>
