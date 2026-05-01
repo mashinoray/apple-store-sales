@@ -38,9 +38,11 @@ const appEmployeeToDb = (app: Employee): Partial<DbEmployee> => ({
   id: app.id,
   name: app.name,
   employee_id: app.employeeId,
-  position: app.position,
-  avatar: app.avatar,
-  is_active: app.isActive,
+  position: app.position || '销售顾问',
+  avatar: app.avatar || null,
+  is_active: app.isActive !== false,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
 });
 
 // 将应用格式转换为数据库格式
@@ -350,17 +352,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // 同步员工到云端
   const syncEmployeeToCloud = async (employee: Employee, action: 'insert' | 'update' | 'delete') => {
     try {
+      let result;
       if (action === 'insert') {
-        await supabase.from('employees').insert(appEmployeeToDb(employee));
+        result = await supabase.from('employees').insert(appEmployeeToDb(employee));
       } else if (action === 'update') {
-        await supabase.from('employees').update(appEmployeeToDb(employee)).eq('id', employee.id);
+        result = await supabase.from('employees').update(appEmployeeToDb(employee)).eq('id', employee.id);
       } else if (action === 'delete') {
-        await supabase.from('employees').delete().eq('id', employee.id);
+        result = await supabase.from('employees').delete().eq('id', employee.id);
       }
+      
+      if (result?.error) {
+        console.error('Supabase 错误:', result.error);
+        setSyncError(`员工同步失败: ${result.error.message}`);
+        return;
+      }
+      
       setLastSyncTime(new Date().toISOString());
-    } catch (error) {
+    } catch (error: any) {
       console.error('同步员工到云端失败:', error);
-      setSyncError('部分数据可能未同步到云端');
+      setSyncError(`员工同步失败: ${error.message || '未知错误'}`);
     }
   };
 
