@@ -2356,8 +2356,8 @@ function WeeklySalesPage() {
     return '#86868b';
   };
 
-  // 员工明细
-  const activeEmployees = employees.filter(e => e.isActive);
+  // 员工明细（只显示销售顾问）
+  const activeEmployees = employees.filter(e => e.isActive && e.position === '销售顾问');
   const employeeStats = activeEmployees.map(emp => {
     const current = getEmployeeSalesStats(emp.id, selectedWeekStart);
     const last = getEmployeeSalesStats(emp.id, lastWeekStartStr);
