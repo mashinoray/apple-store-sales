@@ -1,34 +1,31 @@
 const { app, BrowserWindow, shell } = require('electron')
 const path = require('path')
-const { URL } = require('url')
 
 // 保持对窗口对象的全局引用，避免被GC回收
 let mainWindow
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
-    minWidth: 1024,
-    minHeight: 768,
+    width: 1500,
+    height: 950,
+    minWidth: 1200,
+    minHeight: 800,
     title: 'Apple Store 销售管理系统',
-    // icon: path.join(__dirname, '../public/apple-icon.ico'), // 可后续替换为自定义图标
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: false, // 允许访问 Supabase 等外部 API
+      webSecurity: false,
     },
-    // 现代外观
     frame: true,
-    show: false, // 先隐藏，等加载完再显示（避免白屏闪烁）
+    show: false,
     backgroundColor: '#f5f5f7',
   })
 
   // 加载打包后的 index.html
-  const indexPath = path.join(__dirname, '../dist/index.html')
+  const indexPath = path.join(__dirname, 'index.html')
   mainWindow.loadFile(indexPath)
 
-  // 页面加载完成后显示窗口（无闪烁）
+  // 页面加载完成后显示窗口
   mainWindow.once('ready-to-show', () => {
     mainWindow.show()
     mainWindow.focus()
