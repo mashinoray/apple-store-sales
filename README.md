@@ -36,12 +36,19 @@
 
 下载桌面版（Windows 绿色版，无需安装）：
 
-**[📦 点击下载 apple-sales-desktop.zip](https://github.com/mashinoray/apple-store-sales/releases)**
+- **[📦 v1.2（推荐）](https://github.com/mashinoray/apple-store-sales/releases/tag/v1.2)** - 修复空白页面，窗口化启动（1500×950）
+- **[📦 所有版本](https://github.com/mashinoray/apple-store-sales/releases)** - 查看历史版本
+
+### v1.2 更新内容
+
+- ✅ 修复启动后空白页面的问题
+- ✅ 调整为窗口化启动（1500×950），不再默认全屏
+- ✅ 内容完整显示，无需手动调整窗口大小
 
 ### 使用方法
 
-1. 下载并解压 `apple-sales-desktop.zip`
-2. 双击 **`Apple Store 销售系统.exe`** 即可运行
+1. 从 Releases 页面下载 `apple-sales-app-v1.2.zip`
+2. 解压后双击 **`Apple Store 销售系统.exe`** 即可运行
 3. 无需安装，解压后可移动到任意位置使用
 
 ### 桌面版特点
