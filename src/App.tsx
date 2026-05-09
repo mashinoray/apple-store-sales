@@ -59,7 +59,7 @@ interface HostSalesStats {
 }
 
 // 订单录入弹窗组件
-function OrderModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function OrderModal({ isOpen, onClose, selectedDate }: { isOpen: boolean; onClose: () => void; selectedDate: string }) {
   const { employees, addOrder } = useApp();
   const [formData, setFormData] = useState({
     employeeId: '',
@@ -81,7 +81,7 @@ function OrderModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
     addOrder({
       ...formData,
       tradeInReason: formData.tradeInReason || undefined,
-      date: new Date().toISOString().split('T')[0],
+      date: selectedDate,
     } as any);
 
     // 重置表单
@@ -103,7 +103,7 @@ function OrderModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
   const handleReasonSubmit = () => {
     addOrder({
       ...formData,
-      date: new Date().toISOString().split('T')[0],
+      date: selectedDate,
     } as any);
 
     setFormData({
@@ -525,7 +525,7 @@ function EmployeeList({ onSelectEmployee }: { onSelectEmployee: (id: string) => 
 
 // 数据看板页面
 function Dashboard() {
-  const { orders, getDailyStats, getAllEmployeeStats, getReasonStats, employees } = useApp();
+  const { orders, getDailyStats, getAllEmployeeStats, getReasonStats, employees, selectedDate } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 日期范围选择
@@ -829,7 +829,7 @@ function Dashboard() {
         </div>
       )}
 
-      <OrderModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <OrderModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} selectedDate={selectedDate} />
     </div>
   );
 }
@@ -988,7 +988,7 @@ function OrdersPage() {
         </table>
       </div>
 
-      <OrderModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <OrderModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} selectedDate={selectedDate} />
 
       {/* 编辑订单弹窗 */}
       {editingOrder && (
