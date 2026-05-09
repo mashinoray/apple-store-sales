@@ -78,11 +78,6 @@ function OrderModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.hasTradeIn && !formData.tradeInReason) {
-      setShowReasonModal(true);
-      return;
-    }
-
     addOrder({
       ...formData,
       tradeInReason: formData.tradeInReason || undefined,
@@ -106,7 +101,6 @@ function OrderModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
   };
 
   const handleReasonSubmit = () => {
-    if (!formData.tradeInReason) return;
     addOrder({
       ...formData,
       date: new Date().toISOString().split('T')[0],
@@ -280,7 +274,7 @@ function OrderModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void 
           )}
 
           <button type="submit" className="submit-btn">
-            {formData.hasTradeIn ? '提交订单' : '选择未成交原因'}
+            提交订单
           </button>
         </form>
 
@@ -1099,7 +1093,6 @@ function OrdersPage() {
             <button
               className="submit-btn"
               onClick={handleSaveEdit}
-              disabled={!editHasTradeIn && !editReason}
             >
               保存修改
             </button>
